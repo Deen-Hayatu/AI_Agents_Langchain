@@ -1,0 +1,76 @@
+name: Test AI Agents Course
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest jupyter nbformat
+        
+    - name: Verify setup
+      run: |
+        python setup_verification.py
+        
+    - name: Test module imports
+      run: |
+        python -c "from modules.introduction import concepts; print('✅ Introduction module works')"
+        python -c "from modules.tool_calling import tool_calling_basics; print('✅ Tool calling module works')"
+        python -c "from utils.agent_utils import *; print('✅ Agent utils work')"
+        
+    - name: Validate notebook
+      run: |
+        jupyter nbconvert --to script notebooks/00_course_introduction.ipynb --output test_notebook
+        python notebooks/test_notebook.py
+        
+    - name: Test examples
+      run: |
+        python -m pytest examples/ -v
+        
+  educational-validation:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.11"
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install markdown
+        
+    - name: Validate course structure
+      run: |
+        echo "🔍 Validating course structure..."
+        test -d modules && echo "✅ Modules directory exists"
+        test -d notebooks && echo "✅ Notebooks directory exists" 
+        test -d examples && echo "✅ Examples directory exists"
+        test -d utils && echo "✅ Utils directory exists"
+        test -f requirements.txt && echo "✅ Requirements file exists"
+        test -f README.md && echo "✅ README exists"
+        echo "🎉 Course structure validation complete!"
